@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <!-- https://vuejs.org/guide/quick-start -->
+    <!-- Cargamos la dependencia de Vue -->
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    <title>Primera página con Vue</title>
+</head>
+<body>
+    <div id="app">{{ message }} {{ clase }}</div>
+    <script>
+      const app = Vue.createApp({ /* Creamos la app de vue. */
+        data() {
+          return {
+            message: 'Hola alumn@s!',
+            clase:"Estamos en clase de Vue"
+          }
+        },
+        methods: {
+          mounted() {
+            console.log('App mounted!');
+          },
+          metodo1() {
+            console.log('Método 1');
+          },
+          metodopropiedad1() {
+            console.log('Método propiedad 1 ${this.message}');
+          },
+          metodopropiedad2() {
+            console.log('Método propiedad 2 ${this.clase}');
+          }
+        }
+
+      });
+      /* Montamos la app de vue dentro de un elemento HTML
+      Podemos acceder a appMounted.clase*/
+      const appMounted = app.mount('#app');
+    </script>
+</body>
+</html>

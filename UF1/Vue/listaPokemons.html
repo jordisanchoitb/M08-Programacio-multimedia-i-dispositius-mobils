@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lista Pokemon</title>
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+</head>
+<body>
+    <div id="app">
+        <form v-on:submit.prevent="conectarAPI">
+            <input type="text" v-model="pokemon" placeholder="Numero de habilidades">
+            <button type="submit">Buscar</button>
+        </form>
+        <div v-if="bResult" id="pokemonInfo">
+            <h1>{{ pokemonName }}</h1>
+            <img :src="pokemonImg" :alt="pokemonName">
+            <h2 v-show="pokemonbooltypes">Types</h2>
+            <p v-for="pokemontype in this.pokemonTypes">{{ pokemontype }}</p>
+        </div>
+    </div>
+    <script>
+        const app = Vue.createApp({ /* Creamos la app de vue. */
+        data() {
+            return {
+                result: null,
+                pokemon:"",
+                bResult: Boolean,
+                pokemonbooltypes: false,
+                pokemonName: "",
+                pokemonImg: "",
+                pokemonTypes: [],
+                pokemonTotalAbilities: 0,
+            }
+        },
+        methods: {
+            conectarAPI() {
+                console.log(this.pokemon);
+                const options = {
+                method: "GET",
+                cache: "default"
+                };
+                fetch("https://pokeapi.co/api/v2/pokemon/?offset=0&limit=1500", options)
+                .then(response => response.json())
+                .then(data => {
+                    console.log(data);
+                    this.result = data;
+                    for (let i = 0; i < this.result.results.length; i++) {
+                        this.GetTotalAbilitiesPokemon(this.result.results[i]["url"]);
+                        if ( this.pokemonTotalAbilities > parseInt(this.pokemon) ) {
+                            this.bResult = true;
+                            this.pokemonbooltypes = true;
+                            this.pokemonName = `${data.results[i]["name"].charAt(0).toUpperCase() + data.results[i]["name"].slice(1)}`;
+                            this.GetImgPokemon(this.result.results[i]["url"]);
+                            this.GetTypesPokemon(this.result.results[i]["url"]);
+                        } else {
+                            this.bResult = false;
+                            this.pokemonbooltypes = false;
+                        }
+                    }
+                })
+                .catch(error => {
+                    console.log(error);
+                });
+            },
+            GetImgPokemon(url) {
+                const options = {
+                method: "GET",
+                cache: "default"
+                };
+                fetch(url, options)
+                .then(response => response.json())
+                .then(data => {
+                    //console.log(data);
+                    this.pokemonImg = `${data["sprites"]["front_default"]}`;
+                })
+                .catch(error => {
+                    console.log(error);
+                });
+            },
+            GetTypesPokemon(url) {
+                const options = {
+                method: "GET",
+                cache: "default"
+                };
+                fetch(url, options)
+                .then(response => response.json())
+                .then(data => {
+                    this.pokemonTypes = [];
+                    for (let i = 0; i < data["types"].length; i++) {
+                        //console.log(data["types"][i]["type"]["name"]);
+                        this.pokemonTypes.push(data["types"][i]["type"]["name"].charAt(0).toUpperCase() + data["types"][i]["type"]["name"].slice(1));
+                    }
+                })
+                .catch(error => {
+                    console.log(error);
+                });
+            },
+            GetTotalAbilitiesPokemon(url) {
+                const options = {
+                method: "GET",
+                cache: "default"
+                };
+                fetch(url, options)
+                .then(response => response.json())
+                .then(data => {
+                    console.log(data);
+                    this.pokemonTotalAbilities = data.abilities.length;
+                    console.log(data.abilities.length);
+                })
+                .catch(error => {
+                    console.log(error);
+                });
+            }
+        }
+
+      });
+      /* Montamos la app de vue dentro de un elemento HTML
+      Podemos acceder a appMounted.clase*/
+      const appMounted = app.mount('#app');
+    </script>
+</body>
+</html>

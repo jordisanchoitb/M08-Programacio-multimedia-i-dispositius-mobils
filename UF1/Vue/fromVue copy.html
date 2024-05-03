@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <!-- https://vuejs.org/guide/quick-start -->
+    <!-- Cargamos la dependencia de Vue -->
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    <title>Primera página con Vue</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        #app>form {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin: 20px;
+        }
+        #app>form>input {
+            margin: 10px;
+            padding: 5px;
+            border-radius: 5px;
+            border: 1px solid #a8a5a5;
+        }
+        #app>form>button {
+            padding: 5px;
+            border-radius: 5px;
+            border: 1px solid #a8a5a5;
+            background-color: #f0f0f0;
+            cursor: pointer;
+        }
+        #pokemonInfo {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin: 20px;
+            padding: 10px;
+            border-radius: 5px;
+        }
+        .favoritePokemon {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin: 20px;
+            padding: 10px;
+            border-radius: 5px;
+        }
+        .divFavoritePokemon {
+            display: flex;
+            align-items: center;
+            margin: 20px;
+            padding: 10px;
+            border-radius: 5px;
+        }
+        #h2favorite {
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <div id="app">
+        <form v-on:submit.prevent="conectarAPI">
+            <input type="text" v-model="pokemon" placeholder="Nombre del pokemon">
+            <button type="submit">Buscar</button>
+        </form>
+        <div v-if="bResult" id="pokemonInfo">
+            <h1>{{ pokemonName }}</h1>
+            <img :src="pokemonImg" :alt="pokemonName">
+            <h2 v-show="pokemonbooltypes">Types</h2>
+            <p v-for="pokemontype in this.pokemonTypes">{{ pokemontype }}</p>
+            <button v-if="isFavorite" v-show="buttonFavorite" @click="AnyadirFavoritos">Quitar favoritos</button>
+            <button v-else v-show="buttonFavorite" @click="AnyadirFavoritos">Añadir favoritos</button>
+        </div>
+        <p v-else>No se ha encontrado nada, comprueba que el nombre este correctamente puesto</p>
+        <h2 id="h2favorite" v-show="favoritePokemonsbool">Favoritos</h2>
+        <div id="FavoritePokemons" v-show="favoritePokemonsbool">
+            
+        </div>
+    </div>
+    <script>
+      const app = Vue.createApp({ /* Creamos la app de vue. */
+        data() {
+            return {
+                result: null,
+                pokemon:"",
+                bResult: Boolean,
+                pokemonbooltypes: false,
+                buttonFavorite: false,
+                pokemonPosition: 0,
+                pokemonName: "",
+                pokemonImg: "",
+                pokemonTypes: [], 
+                favoritePokemons: new Map(),
+                favoritePokemonsbool: false
+            }
+        },
+        mounted() {
+            if (localStorage.getItem("favoritePokemons")) {
+                try {
+                    let favoritePokemons = JSON.parse(localStorage.getItem("favoritePokemons"));
+                    this.favoritePokemons = new Map(Object.entries(favoritePokemons));
+                    const options = {
+                        method: "GET",
+                        cache: "default"
+                        };
+                    fetch("https://pokeapi.co/api/v2/pokemon/?offset=0&limit=1500", options)
+                    .then(response => response.json())
+                    .then(data => {
+                        //console.log(data);
+                        this.result = data;
+                        //this.ActualizarFavoritos();
+                        AllFavoritePokemons();
+                    })
+                }
+                catch (e) {
+                    console.log(e);
+                    localStorage.removeItem("favoritePokemons");
+                }
+            }
+        },
+        computed: {
+            isFavorite() {
+                return this.favoritePokemons.has(this.pokemonName);
+            },
+            AllFavoritePokemons() {
+                return this.favoritePokemons;
+            }
+        },
+        methods: {
+            AnyadirFavoritos() {
+                if (this.favoritePokemons.has(this.pokemonName)) {
+                    this.favoritePokemons.delete(this.pokemonName);
+                    this.UpdateLocalStorage();
+                } else {
+                    this.favoritePokemons.set(this.pokemonName, this.pokemonPosition);
+                    this.UpdateLocalStorage();
+                }
+                this.ActualizarFavoritos();
+            },
+            ActualizarFavoritos() {
+                let favoritePokemons = document.getElementById("FavoritePokemons");
+                favoritePokemons.innerHTML = "";
+                if (this.favoritePokemons.size > 0) {
+                    this.favoritePokemonsbool = true;
+                    let favoritePokemonsList = document.createElement("div");
+                    favoritePokemonsList.className = "divFavoritePokemon";
+                    for (let [key, value] of this.favoritePokemons) {
+                        let favoritePokemon = document.createElement("div");
+                        favoritePokemon.className = "favoritePokemon";
+                        favoritePokemon.textContent = `${key}`;
+                        favoritePokemonsList.appendChild(favoritePokemon);
+                        let favoritePokemonimg = document.createElement("img");
+                        const options = {
+                        method: "GET",
+                        cache: "default"
+                        };
+                        fetch(this.result.results[value]["url"], options)
+                        .then(response => response.json())
+                        .then(data => {
+                            favoritePokemonimg.src = data["sprites"]["front_default"];
+                            favoritePokemonimg.alt = key;
+                            favoritePokemon.appendChild(favoritePokemonimg);
+                        })
+                        .catch(error => {
+                            console.log(error);
+                        });
+                    }
+                    favoritePokemons.appendChild(favoritePokemonsList);
+                } else {
+                    this.favoritePokemonsbool = false;
+                }
+            },
+            UpdateLocalStorage() {
+                localStorage.setItem("favoritePokemons", JSON.stringify(Object.fromEntries(this.favoritePokemons.entries())));
+            },
+            conectarAPI() {
+                //console.log(this.pokemon);
+                const options = {
+                method: "GET",
+                cache: "default"
+                };
+                fetch("https://pokeapi.co/api/v2/pokemon/?offset=0&limit=1500", options)
+                .then(response => response.json())
+                .then(data => {
+                    //console.log(data);
+                    this.result = data;
+                    let i = 0;
+                    let found = false;
+                    while (i < data.results.length && !found) {
+                        if (data.results[i].name === this.pokemon.toLowerCase()) {
+                            found = true;
+                            this.bResult = true;
+                            this.pokemonbooltypes = true;
+                            this.buttonFavorite = true;
+                            this.pokemonPosition = i;
+                            //console.log("Pokemon encontrado");
+                            //console.log(data.results[i]);
+                            //console.log(data.results[i]["name"]);
+                            this.pokemonName = `${data.results[i]["name"].charAt(0).toUpperCase() + data.results[i]["name"].slice(1)}`;
+                            //console.log(data.results[i]["url"]);
+                            this.GetImgPokemon(data.results[i]["url"]);
+                            this.GetTypesPokemon(data.results[i]["url"]);
+                        } else {
+                            this.bResult = false;
+                            this.pokemonbooltypes = false;
+                            this.buttonFavorite = false;
+                            //console.log("Pokemon no encontrado");
+                            i++;
+                        }
+                    }
+                })
+                .catch(error => {
+                    console.log(error);
+                });
+            },
+            GetImgPokemon(url) {
+                const options = {
+                method: "GET",
+                cache: "default"
+                };
+                fetch(url, options)
+                .then(response => response.json())
+                .then(data => {
+                    //console.log(data);
+                    this.pokemonImg = `${data["sprites"]["front_default"]}`;
+                })
+                .catch(error => {
+                    console.log(error);
+                });
+            },
+            GetTypesPokemon(url) {
+                const options = {
+                method: "GET",
+                cache: "default"
+                };
+                fetch(url, options)
+                .then(response => response.json())
+                .then(data => {
+                    this.pokemonTypes = [];
+                    for (let i = 0; i < data["types"].length; i++) {
+                        //console.log(data["types"][i]["type"]["name"]);
+                        this.pokemonTypes.push(data["types"][i]["type"]["name"].charAt(0).toUpperCase() + data["types"][i]["type"]["name"].slice(1));
+                    }
+                })
+                .catch(error => {
+                    console.log(error);
+                });
+            }
+        }
+
+      });
+      /* Montamos la app de vue dentro de un elemento HTML
+      Podemos acceder a appMounted.clase*/
+      const appMounted = app.mount('#app');
+    </script>
+</body>
+</html>
